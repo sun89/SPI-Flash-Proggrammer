@@ -17,6 +17,8 @@
 #define wp_h()  digitalWrite(WP, HIGH)
 #define do_value()  digitalRead(DO)
 
+#define CMD_CS_LOW  0x33
+#define CMD_CS_HIGH  0x55
 unsigned char spi_x(unsigned char d)
 {
   int i;
@@ -33,12 +35,8 @@ unsigned char spi_x(unsigned char d)
   }
   return dout;
 }
-
-
-void setup() 
-{ 
-  Serial.begin(115200);   
-  
+void spi_init()
+{
   pinMode(DI, OUTPUT); 
   pinMode(DO, INPUT); 
   pinMode(CLK, OUTPUT); 
@@ -49,37 +47,44 @@ void setup()
   cs_h();
   di_l();
   clk_l();
+}
+
+void setup() 
+{ 
+  Serial.begin(115200);   
+  spi_init();
   hold_h();
   wp_h();
   
 }
-
+char ch,spi_byte;
 void loop() {
   if(Serial.available() > 0)
   {
-    inp = Serial.read();
-    switch(inp)
+    ch = Serial.read();
+    if(ch == CMD_CS_LOW) //may be cs low cmd
     {
-      case CMD_CHIP_INFO:
-        cmd_chip_info_response();
-        break;
-      case CMD_READ_DATA:
-        cmd_read_data_response();
-        break;
-      case CMD_WRITE_EN:
-        cmd_write_en_response();
-        break;
-      case CMD_PAGE_WRITE:
-        cmd_write_page_response();
-        break;
-      case CMD_BLOCK_ERASE:
-        cmd_block_erase_response();
-        break;
-        
-      default: Serial.println("Invalid cmd");
+      if(Serial.available() > 0)
+      {
+        ch = Serial.read();
+        cs_l();
+      }
+      spi_byte = spi_x(ch);      
     }
-    
-    while(Serial.available() > 0)Serial.read();
+    else if(ch == CMD_CS_HIGH) //may be cs high cmd
+    {
+      if(Serial.available() > 0)
+      {
+        ch = Serial.read();
+        cs_h();
+      }
+      spi_byte = spi_x(ch); 
+    }
+    else //normal byte
+    {
+      spi_byte = spi_x(ch); 
+    }
+    while(Serial.available() > 0)Serial.read(); //clear buffer
   }
   
 
