@@ -10,10 +10,15 @@
 #define CMD_DI_HIGH  	0x33
 #define CMD_CK_LOW  	0x34
 #define CMD_CK_HIGH  	0x35
+#define CMD_HO_LOW  	0x36
+#define CMD_HO_HIGH  	0x37
+#define CMD_WP_LOW  	0x38
+#define CMD_WP_HIGH  	0x39
+#define CMD_DO_READ  	0x40
 
 #define SW_VER			2.0.0
-#define CMD_FW_VER  	0xA0
-#define CMD_FW_DATE		0xA1
+#define CMD_FW_VER  	0x20
+#define CMD_FW_DATE		0x21
 
 #define n	1024
 HANDLE hSerial;
@@ -98,18 +103,30 @@ int is_hex(char ch)
 	if(ch >= 'F' && ch <= 'F')return 1;
 	return 0;
 }
-unsigned char get_fw_ver()
+
+unsigned char sent_packet(unsigned char cmd)
 {
-	char ocmd[100] = {0};
-	ocmd[0] = 0xa0;//CMD_FW_VER;
-	ocmd[1] = CMD_FW_VER;
+	char ocmd[3] = {0};
+	ocmd[0] = cmd;
+	ocmd[1] = cmd;
 	uart_putbytes(ocmd, 2);
 	return uart_getchar();
 }
+
+unsigned char get_fw_ver()
+{
+	return sent_packet(CMD_FW_VER);
+}
+
+unsigned char get_do_value()
+{
+	return sent_packet(CMD_DO_READ);
+}
+
 void process_cmd(char *sbuf)
 {
 	int i;
-	unsigned char bytes[30] = {0};
+	unsigned char bytes[30] = {0}, rx_spi;
 	int bcount = 0;	
 	char tmp[3] = {0}, *inptr,ocmd[100] = {0};
 	strncpy(tmp, sbuf, 2);
@@ -117,57 +134,43 @@ void process_cmd(char *sbuf)
 	{
 		inptr = &sbuf[2];
 		bcount = str_to_bytes(inptr, bytes);
-		if(bytes[0] == 0)
-		{
-			ocmd[0] = CMD_CS_LOW;
-			ocmd[1] = CMD_CS_LOW;
-			uart_putbytes(ocmd, 2);
-		}
-		else 
-		{
-			ocmd[0] = CMD_CS_HIGH;
-			ocmd[1] = CMD_CS_HIGH;
-			uart_putbytes(ocmd, 2);
-		}
-		printf("%02X\n", uart_getchar());
+		if(bytes[0] == 0)rx_spi = sent_packet(CMD_CS_LOW);
+		else rx_spi = sent_packet(CMD_CS_HIGH);
+		printf("%02X\n", rx_spi);
 	}
 	
 	else if((strcmp(tmp, "di") == 0) || (strcmp(tmp, "DI") == 0)) //set CS pin CMD
 	{
 		inptr = &sbuf[2];
 		bcount = str_to_bytes(inptr, bytes);
-		if(bytes[0] == 0)
-		{
-			ocmd[0] = CMD_DI_LOW;
-			ocmd[1] = CMD_DI_LOW;
-			uart_putbytes(ocmd, 2);
-		}
-		else 
-		{
-			ocmd[0] = CMD_DI_HIGH;
-			ocmd[1] = CMD_DI_HIGH;
-			uart_putbytes(ocmd, 2);
-		}
-		printf("%02X\n", (unsigned char)uart_getchar());
+		if(bytes[0] == 0)rx_spi = sent_packet(CMD_DI_LOW);
+		else rx_spi = sent_packet(CMD_DI_HIGH);
+		printf("%02X\n", rx_spi);
 	}
 	
 	else if((strcmp(tmp, "ck") == 0) || (strcmp(tmp, "CK") == 0)) //set CS pin CMD
 	{
 		inptr = &sbuf[2];
 		bcount = str_to_bytes(inptr, bytes);
-		if(bytes[0] == 0)
-		{
-			ocmd[0] = CMD_CK_LOW;
-			ocmd[1] = CMD_CK_LOW;
-			uart_putbytes(ocmd, 2);
-		}
-		else 
-		{
-			ocmd[0] = CMD_CK_HIGH;
-			ocmd[1] = CMD_CK_HIGH;
-			uart_putbytes(ocmd, 2);
-		}
-		printf("%02X\n", (unsigned char)uart_getchar());
+		if(bytes[0] == 0)rx_spi = sent_packet(CMD_CK_LOW);
+		else rx_spi = sent_packet(CMD_CK_HIGH);
+		printf("%02X\n", rx_spi);
+	}
+	else if((strcmp(tmp, "ho") == 0) || (strcmp(tmp, "HO") == 0)) //set CS pin CMD
+	{
+		inptr = &sbuf[2];
+		bcount = str_to_bytes(inptr, bytes);
+		if(bytes[0] == 0)rx_spi = sent_packet(CMD_HO_LOW);
+		else rx_spi = sent_packet(CMD_HO_HIGH);
+		printf("%02X\n", rx_spi);
+	}
+	else if((strcmp(tmp, "wp") == 0) || (strcmp(tmp, "WP") == 0)) //set CS pin CMD
+	{
+		inptr = &sbuf[2];
+		bcount = str_to_bytes(inptr, bytes);
+		if(bytes[0] == 0)rx_spi = sent_packet(CMD_WP_LOW);
+		else rx_spi = sent_packet(CMD_WP_HIGH);
+		printf("%02X\n", rx_spi);
 	}
 	else if(is_hex(tmp[0]) && is_hex(tmp[1])) //sent hex data
 	{
@@ -182,6 +185,10 @@ void process_cmd(char *sbuf)
 	else if((strcmp(tmp, "ve") == 0) || (strcmp(tmp, "VE") == 0)) //set CS pin CMD
 	{
 		printf("%02X\n", (unsigned char)get_fw_ver());
+	}
+	else if((strcmp(tmp, "do") == 0) || (strcmp(tmp, "DO") == 0)) //set CS pin CMD
+	{
+		printf("%02X\n", (unsigned char)get_do_value());
 	}
 	else //invalid cmd
 	{

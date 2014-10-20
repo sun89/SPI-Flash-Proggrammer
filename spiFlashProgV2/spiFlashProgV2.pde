@@ -35,8 +35,8 @@ char *date = __DATE__;
 char *time = __TIME__;
 char fw_ver = 0x20;
 
-#define CMD_FW_VER  	0xA0
-#define CMD_FW_DATE	0xA1
+#define CMD_FW_VER  	0x20
+#define CMD_FW_DATE	0x21
 
 unsigned char spi_x(unsigned char d)
 {
@@ -81,7 +81,19 @@ void loop() {
   if(Serial.available() > 0)
   {
     ch = Serial.read();
-    if(ch == CMD_CS_LOW) //may be cs low cmd
+    if(ch == CMD_FW_VER) //may be version chk cmd
+    {
+      delay(UART_DELAY_MS);
+      if(Serial.available() > 0)
+      {
+        spi_byte = fw_ver;                
+      }
+      else
+      {
+        spi_byte = spi_x(ch);
+      } 
+    }
+    else if(ch == CMD_CS_LOW) //may be cs low cmd
     {
       delay(UART_DELAY_MS);
       if(Serial.available() > 0)
@@ -223,18 +235,7 @@ void loop() {
         spi_byte = spi_x(ch);
       } 
     }
-    else if(ch == CMD_FW_VER) //may be version chk cmd
-    {
-      delay(UART_DELAY_MS);
-      if(Serial.available() > 0)
-      {
-        spi_byte = 0xbb;                
-      }
-      else
-      {
-        spi_byte = spi_x(ch);
-      } 
-    }
+    
     else //normal byte
     {
       spi_byte = spi_x(ch); 
