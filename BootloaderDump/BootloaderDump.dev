@@ -1,7 +1,7 @@
 [Project]
-FileName=SPI Terminal.dev
-Name=SPI Terminal
-UnitCount=1
+FileName=BootloaderDump.dev
+Name=BootloaderDump
+UnitCount=2
 Type=1
 Ver=1
 ObjFiles=
@@ -21,13 +21,23 @@ OverrideOutput=0
 OverrideOutputName=
 HostApplication=
 Folders=
-CommandLine=COM6
+CommandLine=
 UseCustomMakefile=0
 CustomMakefile=
 IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=0
 CompilerSettings=
+
+[Unit2]
+FileName=serial.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
 
 [Unit1]
 FileName=main.c
