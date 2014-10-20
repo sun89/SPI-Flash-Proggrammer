@@ -23,8 +23,20 @@
 #define CMD_DI_HIGH  0x33
 #define CMD_CK_LOW  0x34
 #define CMD_CK_HIGH  0x35
+#define CMD_HO_LOW  0x36
+#define CMD_HO_HIGH  0x37
+#define CMD_WP_LOW  0x38
+#define CMD_WP_HIGH  0x39
+#define CMD_DO_READ  0x40
 
 #define UART_DELAY_MS  1
+
+char *date = __DATE__;
+char *time = __TIME__;
+char fw_ver = 0x20;
+
+#define CMD_FW_VER  	0xA0
+#define CMD_FW_DATE	0xA1
 
 unsigned char spi_x(unsigned char d)
 {
@@ -74,7 +86,7 @@ void loop() {
       delay(UART_DELAY_MS);
       if(Serial.available() > 0)
       {
-        Serial.read();
+        spi_byte = CMD_CS_LOW;
         cs_l();         
       }
       else
@@ -87,7 +99,7 @@ void loop() {
       delay(UART_DELAY_MS);
       if(Serial.available() > 0)
       {
-        Serial.read();
+        spi_byte = CMD_CS_HIGH;
         cs_h();                 
       }
       else
@@ -100,7 +112,7 @@ void loop() {
       delay(UART_DELAY_MS);
       if(Serial.available() > 0)
       {
-        Serial.read();
+        spi_byte = CMD_DI_HIGH;
         di_h();                 
       }
       else
@@ -113,7 +125,7 @@ void loop() {
       delay(UART_DELAY_MS);
       if(Serial.available() > 0)
       {
-        Serial.read();
+        spi_byte = CMD_DI_LOW;
         di_l();                 
       }
       else
@@ -126,7 +138,7 @@ void loop() {
       delay(UART_DELAY_MS);
       if(Serial.available() > 0)
       {
-        Serial.read();
+        spi_byte = CMD_CK_HIGH;
         clk_h();                 
       }
       else
@@ -139,8 +151,84 @@ void loop() {
       delay(UART_DELAY_MS);
       if(Serial.available() > 0)
       {
-        Serial.read();
+        spi_byte = CMD_CK_LOW;
         clk_l();                 
+      }
+      else
+      {
+        spi_byte = spi_x(ch);
+      } 
+    }
+    else if(ch == CMD_HO_HIGH) //may be hold high cmd
+    {
+      delay(UART_DELAY_MS);
+      if(Serial.available() > 0)
+      {
+        spi_byte = CMD_HO_HIGH;
+        hold_h();                 
+      }
+      else
+      {
+        spi_byte = spi_x(ch);
+      } 
+    }
+    else if(ch == CMD_HO_LOW) //may be Hold LOW cmd
+    {
+      delay(UART_DELAY_MS);
+      if(Serial.available() > 0)
+      {
+        spi_byte = CMD_HO_LOW;
+        hold_l();                 
+      }
+      else
+      {
+        spi_byte = spi_x(ch);
+      } 
+    }
+    else if(ch == CMD_WP_HIGH) //may be WP high cmd
+    {
+      delay(UART_DELAY_MS);
+      if(Serial.available() > 0)
+      {
+        spi_byte = CMD_WP_HIGH;
+        wp_h();                 
+      }
+      else
+      {
+        spi_byte = spi_x(ch);
+      } 
+    }
+    else if(ch == CMD_WP_LOW) //may be WP LOW cmd
+    {
+      delay(UART_DELAY_MS);
+      if(Serial.available() > 0)
+      {
+        spi_byte = CMD_WP_LOW;
+        wp_l();                 
+      }
+      else
+      {
+        spi_byte = spi_x(ch);
+      } 
+    }
+    else if(ch == CMD_DO_READ) //may be read DO cmd
+    {
+      delay(UART_DELAY_MS);
+      if(Serial.available() > 0)
+      {
+        spi_byte = do_value();                
+      }
+      else
+      {
+        spi_byte = spi_x(ch);
+      } 
+    }
+    else if(ch == CMD_FW_VER) //may be version chk cmd
+    {
+      delay(UART_DELAY_MS);
+      if(Serial.available() > 0)
+      {
+        spi_byte = 0xbb;                
       }
       else
       {
