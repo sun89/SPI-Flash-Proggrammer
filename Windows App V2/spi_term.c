@@ -11,6 +11,10 @@
 #define CMD_CK_LOW  	0x34
 #define CMD_CK_HIGH  	0x35
 
+#define SW_VER			2.0.0
+#define CMD_FW_VER  	0xA0
+#define CMD_FW_DATE		0xA1
+
 #define n	1024
 HANDLE hSerial;
 
@@ -52,23 +56,28 @@ void serial_init(char *port)
 	//SetupComm(hSerial, 1024, 1024);
 }
 
-void uart_putchar(char ch)
+void uart_putchar(unsigned char ch)
 {
 	DWORD bw;
 	WriteFile(hSerial, &ch, 1, &bw, NULL);	
 }
 
-char uart_getchar()
+void uart_putbytes(unsigned char *buf, int len)
+{
+	DWORD bw;
+	WriteFile(hSerial, buf, len, &bw, NULL);
+}
+unsigned char uart_getchar()
 {
 	DWORD br;
-	char ch;
+	char str[100];
 	do
 	{
-		ReadFile(hSerial, &ch, 1, &br, NULL);
+		ReadFile(hSerial, &str[0], 1, &br, NULL);
 	}
 	while(br < 1);
 	
-	return ch;
+	return str[0];
 }
 
 int str_to_bytes(char *str, unsigned char *bytes)
@@ -89,48 +98,96 @@ int is_hex(char ch)
 	if(ch >= 'F' && ch <= 'F')return 1;
 	return 0;
 }
+unsigned char get_fw_ver()
+{
+	char ocmd[100] = {0};
+	ocmd[0] = 0xa0;//CMD_FW_VER;
+	ocmd[1] = CMD_FW_VER;
+	uart_putbytes(ocmd, 2);
+	return uart_getchar();
+}
 void process_cmd(char *sbuf)
 {
 	int i;
 	unsigned char bytes[30] = {0};
 	int bcount = 0;	
-	char tmp[3] = {0}, *inptr;
+	char tmp[3] = {0}, *inptr,ocmd[100] = {0};
 	strncpy(tmp, sbuf, 2);
 	if((strcmp(tmp, "cs") == 0) || (strcmp(tmp, "CS") == 0)) //set CS pin CMD
 	{
 		inptr = &sbuf[2];
 		bcount = str_to_bytes(inptr, bytes);
-		return;
+		if(bytes[0] == 0)
+		{
+			ocmd[0] = CMD_CS_LOW;
+			ocmd[1] = CMD_CS_LOW;
+			uart_putbytes(ocmd, 2);
+		}
+		else 
+		{
+			ocmd[0] = CMD_CS_HIGH;
+			ocmd[1] = CMD_CS_HIGH;
+			uart_putbytes(ocmd, 2);
+		}
+		printf("%02X\n", uart_getchar());
 	}
 	
 	else if((strcmp(tmp, "di") == 0) || (strcmp(tmp, "DI") == 0)) //set CS pin CMD
 	{
 		inptr = &sbuf[2];
 		bcount = str_to_bytes(inptr, bytes);
-		return;
+		if(bytes[0] == 0)
+		{
+			ocmd[0] = CMD_DI_LOW;
+			ocmd[1] = CMD_DI_LOW;
+			uart_putbytes(ocmd, 2);
+		}
+		else 
+		{
+			ocmd[0] = CMD_DI_HIGH;
+			ocmd[1] = CMD_DI_HIGH;
+			uart_putbytes(ocmd, 2);
+		}
+		printf("%02X\n", (unsigned char)uart_getchar());
 	}
 	
-	else if((strcmp(tmp, "CK") == 0) || (strcmp(tmp, "CK") == 0)) //set CS pin CMD
+	else if((strcmp(tmp, "ck") == 0) || (strcmp(tmp, "CK") == 0)) //set CS pin CMD
 	{
 		inptr = &sbuf[2];
 		bcount = str_to_bytes(inptr, bytes);
-		return;
+		if(bytes[0] == 0)
+		{
+			ocmd[0] = CMD_CK_LOW;
+			ocmd[1] = CMD_CK_LOW;
+			uart_putbytes(ocmd, 2);
+		}
+		else 
+		{
+			ocmd[0] = CMD_CK_HIGH;
+			ocmd[1] = CMD_CK_HIGH;
+			uart_putbytes(ocmd, 2);
+		}
+		printf("%02X\n", (unsigned char)uart_getchar());
 	}
 	else if(is_hex(tmp[0]) && is_hex(tmp[1])) //sent hex data
 	{
+		inptr = &sbuf[0];
+		bcount = str_to_bytes(inptr, bytes);
+		uart_putchar(bytes[0]); //sent data
+		printf("%02X ", (unsigned char)uart_getchar());
+		inptr = &sbuf[2];
+		if(strlen(inptr) > 0)process_cmd(inptr); //recursion to next byte
+		printf("\n");
+	}
+	else if((strcmp(tmp, "ve") == 0) || (strcmp(tmp, "VE") == 0)) //set CS pin CMD
+	{
+		printf("%02X\n", (unsigned char)get_fw_ver());
 	}
 	else //invalid cmd
 	{
+		printf("\n\tInvalid cmd\n");
 	}
-	
-	bcount = str_to_bytes(sbuf, bytes);
-	printf("%s\n", sbuf);
-	
-	for(i = 0;i < bcount;i++)
-	{
-		printf("0x%02x ", bytes[i]);
-	}
-	printf("\n");
+	PurgeComm(hSerial, PURGE_RXCLEAR);
 }
 int main()
 {	
@@ -140,28 +197,30 @@ int main()
 	serial_init("COM6");
 	printf("Wait 3 sec\n");
 	Sleep(1000);
+	printf("Firmware version 0x%02X\n", get_fw_ver());
 	printf("Ready\n");
+	printf("# ");
 	while(1)
 	{
 		if((nbyte % 2 == 0) && (nbyte != 0))putchar(' '); //seperate byte
 		Sleep(100);
 		
 		ch = getch();
-		//printf("0x%02X ", ch);
 		putchar(ch);
 		if(ch == '\r') //Process input cmd
 		{
 			putchar('\n');
 			sbuf[nbyte] = '\0';
+			printf("-> ");
 			process_cmd(sbuf);
 			nbyte = 0;
+			printf("# ");
 		}
 		else
 		{
 			sbuf[nbyte++] = ch;
 			
-		}
-		//printf(".");		
+		}	
 	}
 	return 0;	
 }
