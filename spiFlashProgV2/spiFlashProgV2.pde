@@ -85,6 +85,7 @@ void loop() {
       spi_byte = spi_x(ch); 
     }
     while(Serial.available() > 0)Serial.read(); //clear buffer
+    Serial.write(spi_byte);
   }
   
 
