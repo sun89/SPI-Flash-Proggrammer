@@ -23,6 +23,9 @@
 #define n	1024
 HANDLE hSerial;
 
+int m_argc;
+char **m_argv;
+
 void serial_init(char *port)
 {
 	DCB dcbSerialParams = {0};
@@ -123,6 +126,23 @@ unsigned char get_do_value()
 	return sent_packet(CMD_DO_READ);
 }
 
+void usage()
+{
+	char *filename = &m_argv[0][strlen(m_argv[0]) - 1];
+	while(*filename != '\\')
+	{
+		filename--;
+	}
+	filename++;
+	printf("\tSPI Termial Application(Baudrate 115200)\n");
+	printf("\tUsage: %s COM_Port\n",filename);
+	printf("\tEx: %s COM1\n\n", filename);
+}
+
+void cmd_help()
+{
+}
+
 void process_cmd(char *sbuf)
 {
 	int i;
@@ -139,7 +159,7 @@ void process_cmd(char *sbuf)
 		printf("%02X\n", rx_spi);
 	}
 	
-	else if((strcmp(tmp, "di") == 0) || (strcmp(tmp, "DI") == 0)) //set CS pin CMD
+	else if((strcmp(tmp, "di") == 0) || (strcmp(tmp, "DI") == 0)) //set DI pin CMD
 	{
 		inptr = &sbuf[2];
 		bcount = str_to_bytes(inptr, bytes);
@@ -148,7 +168,7 @@ void process_cmd(char *sbuf)
 		printf("%02X\n", rx_spi);
 	}
 	
-	else if((strcmp(tmp, "ck") == 0) || (strcmp(tmp, "CK") == 0)) //set CS pin CMD
+	else if((strcmp(tmp, "ck") == 0) || (strcmp(tmp, "CK") == 0)) //set CLK pin CMD
 	{
 		inptr = &sbuf[2];
 		bcount = str_to_bytes(inptr, bytes);
@@ -156,7 +176,7 @@ void process_cmd(char *sbuf)
 		else rx_spi = sent_packet(CMD_CK_HIGH);
 		printf("%02X\n", rx_spi);
 	}
-	else if((strcmp(tmp, "ho") == 0) || (strcmp(tmp, "HO") == 0)) //set CS pin CMD
+	else if((strcmp(tmp, "ho") == 0) || (strcmp(tmp, "HO") == 0)) //set HOLD pin CMD
 	{
 		inptr = &sbuf[2];
 		bcount = str_to_bytes(inptr, bytes);
@@ -164,7 +184,7 @@ void process_cmd(char *sbuf)
 		else rx_spi = sent_packet(CMD_HO_HIGH);
 		printf("%02X\n", rx_spi);
 	}
-	else if((strcmp(tmp, "wp") == 0) || (strcmp(tmp, "WP") == 0)) //set CS pin CMD
+	else if((strcmp(tmp, "wp") == 0) || (strcmp(tmp, "WP") == 0)) //set WP pin CMD
 	{
 		inptr = &sbuf[2];
 		bcount = str_to_bytes(inptr, bytes);
@@ -182,27 +202,44 @@ void process_cmd(char *sbuf)
 		if(strlen(inptr) > 0)process_cmd(inptr); //recursion to next byte
 		printf("\n");
 	}
-	else if((strcmp(tmp, "ve") == 0) || (strcmp(tmp, "VE") == 0)) //set CS pin CMD
+	else if((strcmp(tmp, "ve") == 0) || (strcmp(tmp, "VE") == 0)) //get version CMD
 	{
 		printf("%02X\n", (unsigned char)get_fw_ver());
 	}
-	else if((strcmp(tmp, "do") == 0) || (strcmp(tmp, "DO") == 0)) //set CS pin CMD
+	else if((strcmp(tmp, "do") == 0) || (strcmp(tmp, "DO") == 0)) //get do pin CMD
 	{
 		printf("%02X\n", (unsigned char)get_do_value());
+	}
+	else if((strcmp(tmp, "ex") == 0) || (strcmp(tmp, "EX") == 0)) //exit app CMD
+	{
+		printf("\nClose COM Port\n");
+		CloseHandle(hSerial);
+		exit(0);
 	}
 	else //invalid cmd
 	{
 		printf("\n\tInvalid cmd\n");
+		cmd_help();
 	}
 	PurgeComm(hSerial, PURGE_RXCLEAR);
 }
-int main()
+
+int main(int argc, char *argv[])
 {	
 	char sbuf[100], ch;
 	int nbyte = 0;
+	
+	m_argc = argc;
+	m_argv = argv;
+	
+	if(argc != 3)
+	{
+		usage();
+		return -1;
+	}
 	printf("Serial Port Init\n");
-	serial_init("COM6");
-	printf("Wait 3 sec\n");
+	serial_init(argv[1]);
+	printf("Wait 1 sec\n");
 	Sleep(1000);
 	printf("Firmware version 0x%02X\n", get_fw_ver());
 	printf("Ready\n");
@@ -229,5 +266,7 @@ int main()
 			
 		}	
 	}
+	printf("\nClose COM Port\n");
+	CloseHandle(hSerial);
 	return 0;	
 }
