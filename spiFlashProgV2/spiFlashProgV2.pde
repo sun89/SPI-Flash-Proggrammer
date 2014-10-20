@@ -17,8 +17,15 @@
 #define wp_h()  digitalWrite(WP, HIGH)
 #define do_value()  digitalRead(DO)
 
-#define CMD_CS_LOW  0x33
-#define CMD_CS_HIGH  0x55
+#define CMD_CS_LOW  0x30
+#define CMD_CS_HIGH  0x31
+#define CMD_DI_LOW  0x32
+#define CMD_DI_HIGH  0x33
+#define CMD_CK_LOW  0x34
+#define CMD_CK_HIGH  0x35
+
+#define UART_DELAY_MS  1
+
 unsigned char spi_x(unsigned char d)
 {
   int i;
@@ -64,21 +71,81 @@ void loop() {
     ch = Serial.read();
     if(ch == CMD_CS_LOW) //may be cs low cmd
     {
+      delay(UART_DELAY_MS);
       if(Serial.available() > 0)
       {
-        ch = Serial.read();
-        cs_l();
+        Serial.read();
+        cs_l();         
       }
-      spi_byte = spi_x(ch);      
+      else
+      {
+        spi_byte = spi_x(ch);
+      }          
     }
     else if(ch == CMD_CS_HIGH) //may be cs high cmd
     {
+      delay(UART_DELAY_MS);
       if(Serial.available() > 0)
       {
-        ch = Serial.read();
-        cs_h();
+        Serial.read();
+        cs_h();                 
       }
-      spi_byte = spi_x(ch); 
+      else
+      {
+        spi_byte = spi_x(ch);
+      } 
+    }
+    else if(ch == CMD_DI_HIGH) //may be DI high cmd
+    {
+      delay(UART_DELAY_MS);
+      if(Serial.available() > 0)
+      {
+        Serial.read();
+        di_h();                 
+      }
+      else
+      {
+        spi_byte = spi_x(ch);
+      } 
+    }
+    else if(ch == CMD_DI_LOW) //may be DI low cmd
+    {
+      delay(UART_DELAY_MS);
+      if(Serial.available() > 0)
+      {
+        Serial.read();
+        di_l();                 
+      }
+      else
+      {
+        spi_byte = spi_x(ch);
+      } 
+    }
+    else if(ch == CMD_CK_HIGH) //may be CK high cmd
+    {
+      delay(UART_DELAY_MS);
+      if(Serial.available() > 0)
+      {
+        Serial.read();
+        clk_h();                 
+      }
+      else
+      {
+        spi_byte = spi_x(ch);
+      } 
+    }
+    else if(ch == CMD_CK_LOW) //may be CK LOW cmd
+    {
+      delay(UART_DELAY_MS);
+      if(Serial.available() > 0)
+      {
+        Serial.read();
+        clk_l();                 
+      }
+      else
+      {
+        spi_byte = spi_x(ch);
+      } 
     }
     else //normal byte
     {
