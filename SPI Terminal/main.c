@@ -2,7 +2,8 @@
 #include<string.h>
 #include<stdlib.h>
 #include<windows.h>
-#include <tchar.h>
+#include<tchar.h>
+#include "rs232.h"
 
 #define CMD_CS_LOW  	0x30
 #define CMD_CS_HIGH  	0x31
@@ -21,75 +22,26 @@
 #define CMD_FW_DATE		0x21
 
 #define n	1024
-HANDLE hSerial;
+
 
 char app_name[255] = {0};
+int cport_nr=5;        /* (COM5 on windows) */
 
-void serial_init(char *port)
-{
-	DCB dcbSerialParams = {0};
-	hSerial = CreateFile(port,GENERIC_READ | GENERIC_WRITE,0,0,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,0);
-	if(hSerial==INVALID_HANDLE_VALUE)
-	{
-		//some other error occurred. Inform user.
-		printf("Open COM port fail.\n");
-		if(GetLastError()==ERROR_FILE_NOT_FOUND)
-		{
-			//serial port does not exist. Inform user.
-			printf("COM port not found.\n");
-		}		
-		exit(0);
-	}
-	
-
-	
-	dcbSerialParams.DCBlength=sizeof(dcbSerialParams);
-	if (!GetCommState(hSerial, &dcbSerialParams)) 
-	{
-		//error getting state
-		printf("GetCommState Error\n");
-		exit(0);
-	}
-	dcbSerialParams.BaudRate=CBR_115200;
-	dcbSerialParams.ByteSize=8;
-	dcbSerialParams.StopBits=ONESTOPBIT;
-	dcbSerialParams.Parity=NOPARITY;
-	if(!SetCommState(hSerial, &dcbSerialParams))
-	{
-		printf("SetCommState Error\n");
-		exit(0);
-	}
-	if (!SetupComm(hSerial,2048,2048))
-	{
-		printf("Set Buffer size Error\n");
-		exit(0);
-	}
-	//SetupComm(hSerial, 1024, 1024);
-}
-
-void uart_putchar(unsigned char ch)
-{
-	DWORD bw;
-	WriteFile(hSerial, &ch, 1, &bw, NULL);	
-}
-
-void uart_putbytes(unsigned char *buf, int len)
-{
-	DWORD bw;
-	WriteFile(hSerial, buf, len, &bw, NULL);
-}
+#define uart_putbytes(xx, yy)  RS232_SendBuf(cport_nr, xx, yy)
+#define uart_putchar(xxx) RS232_SendByte(cport_nr, xxx)
 unsigned char uart_getchar()
 {
 	DWORD br;
 	char str[100];
 	do
 	{
-		ReadFile(hSerial, &str[0], 1, &br, NULL);
+		br = RS232_PollComport(cport_nr, str, 1);
 	}
 	while(br < 1);
 	
 	return str[0];
 }
+
 
 int str_to_bytes(char *str, unsigned char *bytes)
 {
@@ -214,7 +166,7 @@ void process_cmd(char *sbuf)
 		printf("%02X ", (unsigned char)uart_getchar());
 		inptr = &sbuf[2];
 		if(strlen(inptr) > 0)process_cmd(inptr); //recursion to next byte
-		printf("\n");
+		else printf("\n");
 	}
 	else if((strcmp(tmp, "ve") == 0) || (strcmp(tmp, "VE") == 0)) //get version CMD
 	{
@@ -227,7 +179,7 @@ void process_cmd(char *sbuf)
 	else if((strcmp(tmp, "x") == 0) || (strcmp(tmp, "X") == 0)) //exit app CMD
 	{
 		printf("\nClose COM Port\nExit App\n");
-		CloseHandle(hSerial);
+		RS232_CloseComport(cport_nr); //CloseHandle(hSerial);
 		exit(0);
 	}
 	else //invalid cmd
@@ -235,28 +187,51 @@ void process_cmd(char *sbuf)
 		printf("Invalid cmd\n\n");
 		cmd_help();
 	}
-	PurgeComm(hSerial, PURGE_RXCLEAR);
+	//PurgeComm(hSerial, PURGE_RXCLEAR);
+}
+int find_first_num(char *str)
+{
+    char *ptr = str;
+    int i=0;
+    while(!isdigit(*ptr))
+    {
+        i++;
+        ptr++;
+    }
+    return i;
 }
 
 int main(int argc, char *argv[])
 {	
 	char sbuf[100], ch;
 	int nbyte = 0;
-	
-    strcpy(app_name, argv[0]);
+	int bdrate=500000;       /* 9600 baud */
+	char com_name[20] = {0};
 
+    char mode[]={'8','N','1',0},  str[2][512];
+    strcpy(app_name, argv[0]);
+    
 	if(argc != 2)
 	{
 		usage();
 		return 0;
 	}
-	printf("\n\n\t\t\tSPI Termial Application(Baudrate 115200)\n");
-	printf("\t\t\t----------------------------------------\n");
-	printf("Serial Port %s Initial...\n", argv[1]);
-	serial_init(argv[1]);
-	printf("Wait 1 sec\n");
-	Sleep(1000);
-	printf("Firmware version 0x%02X\n", get_fw_ver());
+	printf("\n\n\t\t\tSPI Termial Application\n");
+	printf("\t\t\t-----------------------\n");	
+	strcpy(com_name, argv[1]);
+	cport_nr = atoi(&com_name[find_first_num(com_name)]);
+	cport_nr--;
+	sprintf(sbuf, "COM%d", cport_nr + 1);
+	printf("Serial Port %s Initial...\n", sbuf);
+	if(RS232_OpenComport(cport_nr, bdrate, mode))
+    {
+        printf("Can not open comport\n");
+        return(0);
+    }
+    Sleep(3000);
+    
+    printf("Board Firmware Version: ");
+    printf("%02X\n", get_fw_ver());
 	printf("Ready\n");
 	printf("# ");
 	while(1)
@@ -282,6 +257,6 @@ int main(int argc, char *argv[])
 		}	
 	}
 	printf("\nClose COM Port\n");
-	CloseHandle(hSerial);
+	RS232_CloseComport(cport_nr); //CloseHandle(hSerial);
 	return 0;	
 }

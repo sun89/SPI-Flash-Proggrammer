@@ -1,7 +1,7 @@
 [Project]
 FileName=SPI Terminal.dev
 Name=SPI Terminal
-UnitCount=1
+UnitCount=3
 Type=1
 Ver=1
 ObjFiles=
@@ -56,4 +56,24 @@ OriginalFilename=
 ProductName=
 ProductVersion=
 AutoIncBuildNr=0
+
+[Unit2]
+FileName=rs232.c
+CompileCpp=0
+Folder=SPI Terminal
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit3]
+FileName=rs232.h
+CompileCpp=0
+Folder=SPI Terminal
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
 

@@ -1,7 +1,7 @@
 [Project]
-FileName=BootloaderDump.dev
-Name=BootloaderDump
-UnitCount=2
+FileName=BootLoaderDumpV2.dev
+Name=BootLoaderDumpV2
+UnitCount=3
 Type=1
 Ver=1
 ObjFiles=
@@ -28,16 +28,6 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=0
 CompilerSettings=
-
-[Unit2]
-FileName=serial.h
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
 
 [Unit1]
 FileName=main.c
@@ -66,4 +56,24 @@ OriginalFilename=
 ProductName=
 ProductVersion=
 AutoIncBuildNr=0
+
+[Unit2]
+FileName=rs232.c
+CompileCpp=0
+Folder=BootLoaderDumpV2
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit3]
+FileName=rs232.h
+CompileCpp=0
+Folder=BootLoaderDumpV2
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
 

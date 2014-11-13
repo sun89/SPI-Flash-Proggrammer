@@ -1,3 +1,7 @@
+
+
+#include <SPI.h>
+
 #define WP    9
 #define DI    11 
 #define DO    12
@@ -29,7 +33,7 @@
 #define CMD_WP_HIGH  0x39
 #define CMD_DO_READ  0x40
 
-#define UART_DELAY_MS  1
+#define UART_DELAY_US  10
 
 char *date = __DATE__;
 char *time = __TIME__;
@@ -37,7 +41,7 @@ char fw_ver = 0x20;
 
 #define CMD_FW_VER  	0x20
 #define CMD_FW_DATE	0x21
-
+/*
 unsigned char spi_x(unsigned char d)
 {
   int i;
@@ -54,11 +58,15 @@ unsigned char spi_x(unsigned char d)
   }
   return dout;
 }
+*/
+#define spi_x(xr)  SPI.transfer(xr)
 void spi_init()
 {
-  pinMode(DI, OUTPUT); 
-  pinMode(DO, INPUT); 
-  pinMode(CLK, OUTPUT); 
+  SPI.begin();
+  SPI.setClockDivider(SPI_CLOCK_DIV2);
+  //pinMode(DI, OUTPUT); 
+  //pinMode(DO, INPUT); 
+  //pinMode(CLK, OUTPUT); 
   pinMode(CS, OUTPUT); 
   pinMode(HOLD, OUTPUT); 
   pinMode(WP, OUTPUT); 
@@ -70,7 +78,8 @@ void spi_init()
 
 void setup() 
 { 
-  Serial.begin(115200);   
+  Serial.begin(500000);   
+  //Serial.println("Hello");
   spi_init();
   hold_h();
   wp_h();
@@ -83,7 +92,7 @@ void loop() {
     ch = Serial.read();
     if(ch == CMD_FW_VER) //may be version chk cmd
     {
-      delay(UART_DELAY_MS);
+      delayMicroseconds(UART_DELAY_US);
       if(Serial.available() > 0)
       {
         spi_byte = fw_ver;                
@@ -95,7 +104,7 @@ void loop() {
     }
     else if(ch == CMD_CS_LOW) //may be cs low cmd
     {
-      delay(UART_DELAY_MS);
+      delayMicroseconds(UART_DELAY_US);
       if(Serial.available() > 0)
       {
         spi_byte = CMD_CS_LOW;
@@ -108,7 +117,7 @@ void loop() {
     }
     else if(ch == CMD_CS_HIGH) //may be cs high cmd
     {
-      delay(UART_DELAY_MS);
+      delayMicroseconds(UART_DELAY_US);
       if(Serial.available() > 0)
       {
         spi_byte = CMD_CS_HIGH;
@@ -121,7 +130,7 @@ void loop() {
     }
     else if(ch == CMD_DI_HIGH) //may be DI high cmd
     {
-      delay(UART_DELAY_MS);
+      delayMicroseconds(UART_DELAY_US);
       if(Serial.available() > 0)
       {
         spi_byte = CMD_DI_HIGH;
@@ -134,7 +143,7 @@ void loop() {
     }
     else if(ch == CMD_DI_LOW) //may be DI low cmd
     {
-      delay(UART_DELAY_MS);
+      delayMicroseconds(UART_DELAY_US);
       if(Serial.available() > 0)
       {
         spi_byte = CMD_DI_LOW;
@@ -147,7 +156,7 @@ void loop() {
     }
     else if(ch == CMD_CK_HIGH) //may be CK high cmd
     {
-      delay(UART_DELAY_MS);
+      delayMicroseconds(UART_DELAY_US);
       if(Serial.available() > 0)
       {
         spi_byte = CMD_CK_HIGH;
@@ -160,7 +169,7 @@ void loop() {
     }
     else if(ch == CMD_CK_LOW) //may be CK LOW cmd
     {
-      delay(UART_DELAY_MS);
+      delayMicroseconds(UART_DELAY_US);
       if(Serial.available() > 0)
       {
         spi_byte = CMD_CK_LOW;
@@ -173,7 +182,7 @@ void loop() {
     }
     else if(ch == CMD_HO_HIGH) //may be hold high cmd
     {
-      delay(UART_DELAY_MS);
+      delayMicroseconds(UART_DELAY_US);
       if(Serial.available() > 0)
       {
         spi_byte = CMD_HO_HIGH;
@@ -186,7 +195,7 @@ void loop() {
     }
     else if(ch == CMD_HO_LOW) //may be Hold LOW cmd
     {
-      delay(UART_DELAY_MS);
+      delayMicroseconds(UART_DELAY_US);
       if(Serial.available() > 0)
       {
         spi_byte = CMD_HO_LOW;
@@ -199,7 +208,7 @@ void loop() {
     }
     else if(ch == CMD_WP_HIGH) //may be WP high cmd
     {
-      delay(UART_DELAY_MS);
+      delayMicroseconds(UART_DELAY_US);
       if(Serial.available() > 0)
       {
         spi_byte = CMD_WP_HIGH;
@@ -212,7 +221,7 @@ void loop() {
     }
     else if(ch == CMD_WP_LOW) //may be WP LOW cmd
     {
-      delay(UART_DELAY_MS);
+      delayMicroseconds(UART_DELAY_US);
       if(Serial.available() > 0)
       {
         spi_byte = CMD_WP_LOW;
@@ -225,7 +234,7 @@ void loop() {
     }
     else if(ch == CMD_DO_READ) //may be read DO cmd
     {
-      delay(UART_DELAY_MS);
+      delayMicroseconds(UART_DELAY_US);
       if(Serial.available() > 0)
       {
         spi_byte = do_value();                
