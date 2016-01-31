@@ -1,8 +1,17 @@
 #include<stdio.h>
 #include<string.h>
 #include<stdlib.h>
+
+#ifdef linux
+#include<unistd.h>
+#define mSleep(x)	usleep(x*1000UL)
+//typedef unsigned long	DWORD
+#else
 #include<windows.h>
 #include<tchar.h>
+#define mSleep(x)	Sleep(x)
+#endif
+
 #include "rs232.h"
 
 #define CMD_CS_LOW  	0x30
@@ -23,6 +32,23 @@
 
 #define n	1024
 
+#ifndef getch
+/* reads from keypress, doesn't echo */
+int getch(void)
+{
+    struct termios oldattr, newattr;
+    int ch;
+    tcgetattr( STDIN_FILENO, &oldattr );
+    newattr = oldattr;
+    newattr.c_lflag &= ~( ICANON | ECHO );
+    tcsetattr( STDIN_FILENO, TCSANOW, &newattr );
+    ch = getchar();
+    tcsetattr( STDIN_FILENO, TCSANOW, &oldattr );
+    return ch;
+}
+
+
+#endif
 
 char app_name[255] = {0};
 int cport_nr=5;        /* (COM5 on windows) */
@@ -31,7 +57,7 @@ int cport_nr=5;        /* (COM5 on windows) */
 #define uart_putchar(xxx) RS232_SendByte(cport_nr, xxx)
 unsigned char uart_getchar()
 {
-	DWORD br;
+	unsigned long br;
 	char str[100];
 	do
 	{
@@ -202,7 +228,7 @@ int find_first_num(char *str)
 }
 
 int main(int argc, char *argv[])
-{	
+{
 	char sbuf[100], ch;
 	int nbyte = 0;
 	int bdrate=500000;       /* 9600 baud */
@@ -210,14 +236,14 @@ int main(int argc, char *argv[])
 
     char mode[]={'8','N','1',0},  str[2][512];
     strcpy(app_name, argv[0]);
-    
+
 	if(argc != 2)
 	{
 		usage();
 		return 0;
 	}
 	printf("\n\n\t\t\tSPI Termial Application\n");
-	printf("\t\t\t-----------------------\n");	
+	printf("\t\t\t-----------------------\n");
 	strcpy(com_name, argv[1]);
 	cport_nr = atoi(&com_name[find_first_num(com_name)]);
 	cport_nr--;
@@ -228,8 +254,8 @@ int main(int argc, char *argv[])
         printf("Can not open comport\n");
         return(0);
     }
-    Sleep(3000);
-    
+    mSleep(3000);
+
     printf("Board Firmware Version: ");
     printf("%02X\n", get_fw_ver());
 	printf("Ready\n");
@@ -237,8 +263,8 @@ int main(int argc, char *argv[])
 	while(1)
 	{
 		if((nbyte % 2 == 0) && (nbyte != 0))putchar(' '); //seperate byte
-		Sleep(100);
-		
+		mSleep(100);
+
 		ch = getch();
 		putchar(ch);
 		if(ch == '\r') //Process input cmd
@@ -253,10 +279,10 @@ int main(int argc, char *argv[])
 		else
 		{
 			sbuf[nbyte++] = ch;
-			
-		}	
+
+		}
 	}
 	printf("\nClose COM Port\n");
 	RS232_CloseComport(cport_nr); //CloseHandle(hSerial);
-	return 0;	
+	return 0;
 }
